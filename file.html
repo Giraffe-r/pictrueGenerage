@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片拼接与下载</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 300px;
+        }
+        canvas {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <input type="file" id="fileInput" accept="image/*">
+        <textarea id="textInput" rows="4" placeholder="输入文本内容"></textarea>
+        <button onclick="generateImage()">生成并下载图片</button>
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <script>
+        function generateImage() {
+            const fileInput = document.getElementById('fileInput');
+            const textInput = document.getElementById('textInput').value;
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+            const fixedWidth = 1000;  // 固定宽度
+            const lineHeight = 35; // 每行的行高
+            const margin = 30;     // 文本距离图片的边距
+            const indent = '       '; // 8个空格
+
+            if (!fileInput.files.length) {
+                alert("请上传一张图片！");
+                return;
+            }
+
+            const image = new Image();
+            image.src = URL.createObjectURL(fileInput.files[0]);
+            image.onload = function () {
+                // 计算图片的等比例缩放高度
+                const scaleFactor = fixedWidth / image.width;
+                const scaledHeight = image.height * scaleFactor;
+                // 设置画布宽度为图片宽度
+                canvas.width = fixedWidth;
+
+                // 文本换行处理并计算行数
+                context.font = "28px Arial";
+                const maxTextWidth = canvas.width - margin * 2;
+                console.log(maxTextWidth);
+                const lines = [];  // 存储每一行的文本
+
+                // 按字符逐个添加，检测行宽
+                let line = indent; // 首行加上缩进
+                for (let char of textInput) {
+                    const testLine = line + char;
+                    const testWidth = context.measureText(testLine).width;
+                    
+                    // 当行宽度超过最大宽度时，换行
+                    if (testWidth + 20 > maxTextWidth) {
+                        console.log(testWidth);
+                        lines.push(line);
+                        line = char; // 当前字符成为新行的第一个字符
+                    } else {
+                        line = testLine;
+                    }
+                }
+                lines.push(line); // 添加最后一行
+
+                // 计算画布高度
+                canvas.height = scaledHeight + lines.length * lineHeight + margin;
+
+                // 填充背景颜色为白色
+                context.fillStyle = "white";
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // 绘制图片
+                context.drawImage(image, 0, 0, fixedWidth, scaledHeight);
+
+                // 绘制文本
+                context.fillStyle = "#DC0D1D";
+                context.font = "28px Arial Bold";
+                context.textAlign = "left";
+                let y = scaledHeight + margin + 20;
+
+                lines.forEach(line => {
+                    context.fillText(line, margin, y);
+                    y += lineHeight;
+                });
+
+                // 创建图片下载链接
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL("image/png");
+                link.download = '拼接图片.png';
+                link.click();
+            };
+        }
+    </script>
+</body>
+</html>
